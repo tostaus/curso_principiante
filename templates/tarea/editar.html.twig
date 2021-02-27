@@ -1,7 +1,11 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Hello TareaController!{% endblock %}
+{% block title %}Editar tarea{% endblock %}
 
 {% block body %}
-    Editar
+    <h1>Editar tarea</h1>
+    
+    {% include 'comunes/_mensajes.html.twig' %}
+
+    {% include 'tarea/_formulario.html.twig' with {'accion': path('app_editar_tarea', {'id': tarea.id}), 'etiqueta_btn_enviar': 'Editar'} %}
 {% endblock %}
