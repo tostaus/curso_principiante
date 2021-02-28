@@ -3,6 +3,7 @@
 namespace App\Controller;
 
 use App\Entity\Tarea;
+use App\Service\TareaManager;
 use App\Repository\TareaRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -86,13 +87,87 @@ class TareaController extends AbstractController
         ]);
     }
 
-     /**
-     * @Route("/tarea/eliminar/{id}", name="app_eliminar_tarea")
+    /**
+     * Con paramsConvert
+     * @Route(
+     *      "/editar-tarea-convert/{id}",
+     *      name="app_editar_tarea_convert",
+     *      requirements={"id"="\d+"}
+     * )
      */
-    public function eliminar(int $id)
+    public function editarParamsConvert(Tarea $tarea, Request $request): Response
     {
-        return $this->render('tarea/eliminar.html.twig', [
-            'controller_name' => 'TareaController',
+        $descripcion = $request->request->get('descripcion', null);
+        if (null !== $descripcion) {
+            if (!empty($descripcion)) {
+                $em = $this->getDoctrine()->getManager();
+                $tarea->setDescripcion($descripcion);
+                $em->flush();
+                $this->addFlash(
+                    'success',
+                    'Tarea editada correctamente!'
+                );
+                return $this->redirectToRoute('app_listado_tarea');
+            } else {
+                $this->addFlash(
+                    'warning',
+                    'El campo "Descripción" es obligatorio'
+                );
+            }
+        }
+        return $this->render('tarea/editar.html.twig', [
+            "tarea" => $tarea,
         ]);
+    }
+    /**
+     * @Route("/crear-tarea-servicio", name="app_crear_tarea_servicio")
+     */
+    public function crearServicio(TareaManager $tareaManager, Request $request): Response
+    {
+        $descripcion = $request->request->get('descripcion', null);
+        $tarea = new Tarea();
+        if (null !== $descripcion) {
+            $tarea->setDescripcion($descripcion);
+            $errores = $tareaManager->validar($tarea);
+
+            if (empty($errores)) {
+                $tareaManager->crear($tarea);
+                $this->addFlash(
+                    'success',
+                    'Tarea creada correctamente!'
+                );
+                return $this->redirectToRoute('app_listado_tarea');
+            } else {
+                foreach ($errores as $error) {
+                    $this->addFlash(
+                        'warning',
+                        $error->getMessage()
+                    );
+                }
+            }
+        }
+        return $this->render('tarea/crear.html.twig', [
+            "tarea" => $tarea,
+        ]);
+    }
+    /**
+     * Con paramsConvert
+     * @Route(
+     *      "/eliminar-tarea/{id}",
+     *      name="app_eliminar_tarea",
+     *      requirements={"id"="\d+"}
+     * )
+     */
+    public function eliminar(Tarea $tarea): Response
+    {
+        $em = $this->getDoctrine()->getManager();
+        $em->remove($tarea);
+        $em->flush();
+        $this->addFlash(
+            'success',
+            'Tarea eliminada correctamente!'
+        );
+
+        return $this->redirectToRoute('app_listado_tarea');
     }
 }
